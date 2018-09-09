@@ -14,28 +14,42 @@ const fs = require('fs');
 const fileType = require('file-type');
 const bluebird = require('bluebird');
 const multiparty = require('multiparty');
+require('dotenv').load();
 
 AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  accessKeyId: process.env.aws_access_key_id,
+  secretAccessKey: process.env.aws_secret_access_key
 });
 
 // configure AWS to work with promises
 AWS.config.setPromisesDependency(bluebird);
 
 // create S3 instance
-const s3 = new AWS.S3();
+const s3 = new AWS.S3({region: 'us-east-2'});
 
 const uploadFile = (buffer, name, type) => {
   const params = {
-    ACL: 'public',
+    ACL: 'public-read',
     Body: buffer,
-    Bucket: process.env.DANIK_S3_BUCKET,
+    Bucket: 'kaj011',
     ContentType: type.mime,
     Key: `${name}.${type.ext}`
   };
-  console.log(params);
-  return s3.upload(params).promise();
+  // console.log(params);
+  // return s3.upload(params).promise();
+  s3.putObject(params, function(err, data) {
+
+    if (err) {
+
+        console.log(err)
+
+    } else {
+
+        console.log("Successfully uploaded data to myBucket/myKey");
+
+    }
+
+ });
 };
 
 
@@ -70,12 +84,12 @@ app.prepare().then(() => {
   //
   // // server.use(fileUpload());
   server.use('/public', express.static(__dirname + '/public'));
-  // server.use('/s3', require('react-dropzone-s3-uploader/s3router')({
-  //   bucket: 'kaj011',                           // required
-  //   region: 'us-east-2',                            // optional
-  //   headers: {'Access-Control-Allow-Origin': '*'},  // optional
-  //   ACL: 'private'
-  // }));
+  server.use('/s3', require('react-dropzone-s3-uploader/s3router')({
+    bucket: 'kaj011',                           // required
+    region: 'us-east-2',                            // optional
+    headers: {'Access-Control-Allow-Origin': '*'},  // optional
+    ACL: 'public-read'
+  }));
 
   // server.get('*', (req, res) => {
   //   return handle(req, res)
@@ -84,8 +98,8 @@ app.prepare().then(() => {
 
   server.post('/test-upload', (request, response) => {
     console.log('test-upload');
-    console.log(process.env.AWS_ACCESS_KEY_ID);
-    console.log(process.env.AWS_SECRET_ACCESS_KEY);
+    console.log(process.env.aws_access_key_id);
+    console.log(process.env.aws_secret_access_key);
 
 
     const form = new multiparty.Form();
@@ -97,7 +111,7 @@ app.prepare().then(() => {
           const type = fileType(buffer);
           const timestamp = Date.now().toString();
           console.log(timestamp);
-          const fileName = `bucketFolder/${timestamp}-lg`;
+          const fileName = `submissions/${timestamp}-lg`;
           console.log(fileName);
           const data = await uploadFile(buffer, fileName, type);
           console.log(data);

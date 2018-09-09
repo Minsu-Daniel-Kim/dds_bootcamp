@@ -11,7 +11,9 @@ export default () => {
 
       <Link route='/'>
         <a className='item'>
-          Data Science Bootcamp
+          <b>
+          PlayGround.ds
+          </b>
         </a>
       </Link>
 
